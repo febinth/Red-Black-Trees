@@ -19,12 +19,19 @@ searchRB key (NodeRB _ leftRBT a rightRBT)
   | otherwise = True -- If key is equal to root, return True
 
 
--- Minimum and maximum of red-black tree
---   return Nothing if the tree is empty
+-- Minimum of red-black tree
+-- return Nothing if the tree is empty
+minRB :: RBT a -> Maybe a
+minRB LeafRB = Nothing
+minRB (NodeRB _ LeafRB a _) = Just a -- If left sub tree is a leaf return the root
+minRB (NodeRB _ leftRBT _ _) = minRB leftRBT -- Recursively check left sub tree for minimum value
 
--- minRB :: RBT a -> Maybe a
-
--- maxRB :: RBT a -> Maybe a
+-- Maximum of red-black tree
+-- return Nothing if the tree is empty
+maxRB :: RBT a -> Maybe a
+maxRB LeafRB = Nothing
+maxRB (NodeRB _ _ a LeafRB) = Just a -- If right sub tree is a leaf return the root
+maxRB (NodeRB _ _ _ rightRBT) = maxRB rightRBT -- Recursively check right sub tree for maximum value
   
 
 -- -- Check if a tree satisfies the Binary Search Tree condition
