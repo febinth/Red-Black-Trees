@@ -47,19 +47,52 @@ isBST (NodeRB _ leftRBT a rightRBT) =
   in leftTreeCheck && rightTreeCheck && isBST leftRBT && isBST rightRBT
 
 
--- -- Check the Black-balancing condition:
--- --     all paths have the same number of black nodes
+-- Check the Black-balancing condition:
+--     all paths have the same number of black nodes
+blackBalanced :: RBT a -> Bool
+blackBalanced a 
+  | null counts = True  -- Handle the empty tree case
+  | otherwise = all (== head counts) (tail counts)  -- Check if all elements are equal to the first one
+  where counts = countBlackNodes a
 
--- blackBalanced :: RBT a -> Bool
+countBlackNodes :: RBT a -> [Int]
+countBlackNodes LeafRB = [0]
+countBlackNodes (NodeRB color leftRBT _ rightRBT) = 
+  -- Traverse all paths of the RBT and maintain the count of black nodes 
+  let blackCountLeft = countBlackNodes leftRBT
+      blackCountRight = countBlackNodes rightRBT
+      addIfBlack = if color == Black then 1 else 0
+  -- If the current node is black, then all the paths passing through this node should have black node count increased by 1
+  in map (+ addIfBlack) (blackCountLeft ++ blackCountRight) -- Add addIfBlack to the concatenated list of left and right sub trees
 
 
--- -- Black height of a black-balanced tree, -1 if not black-balanced
+-- Black height of a black-balanced tree, -1 if not black-balanced
+blackHeight :: RBT a -> Int
+blackHeight LeafRB = 0
+blackHeight a
+  | blackBalanced a = head (countBlackNodes a) -- countBlackNodes returns a list of the number of black nodes in each path, take only the head
+  | otherwise = -1
 
--- blackHeight :: RBT a -> Int
 
+-- Check if all Red-Black Tree conditions are satisfied
+isRBT :: Ord a => RBT a -> Bool
+isRBT a = isBST a && isRootBlack a && noConsecutiveRed a && blackBalanced a
 
--- -- Check if all Red-Black Tree conditions are satisfied
--- isRBT :: Ord a => RBT a -> Bool
+-- Check if the root is black
+isRootBlack :: RBT a -> Bool
+isRootBlack (NodeRB Black _ _ _) = True
+isRootBlack _ = False
+
+-- Check that there are no consecutive red nodes
+noConsecutiveRed :: RBT a -> Bool
+noConsecutiveRed LeafRB = True
+noConsecutiveRed (NodeRB color leftRBT _ rightRBT) = 
+    noRedChildren color leftRBT && noRedChildren color rightRBT && noConsecutiveRed leftRBT && noConsecutiveRed rightRBT
+
+-- Helper function to check for red children of a red node
+noRedChildren :: Color -> RBT a -> Bool
+noRedChildren Red (NodeRB Red _ _ _) = False --If parent node is red and left/right child node is also red, return False
+noRedChildren _ _ = True
 
 
 -- -- Insert a new element in a RBT, preserving the RBT properties
