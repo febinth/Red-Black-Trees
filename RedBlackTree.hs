@@ -94,11 +94,34 @@ noRedChildren :: Color -> RBT a -> Bool
 noRedChildren Red (NodeRB Red _ _ _) = False --If parent node is red and left/right child node is also red, return False
 noRedChildren _ _ = True
 
+-- Insert a new element in a RBT, preserving the RBT properties
+insertRB :: Ord a => a -> RBT a -> RBT a
+insertRB a tree = blackRoot (ins a tree)
 
--- -- Insert a new element in a RBT, preserving the RBT properties
+-- Function to paint the root node black
+blackRoot :: RBT a -> RBT a
+blackRoot LeafRB = LeafRB
+blackRoot (NodeRB _ leftRBT value rightRBT) = NodeRB Black leftRBT value rightRBT
 
--- insertRB :: Ord a => a -> RBT a -> RBT a
+-- Helper function for insert
+ins :: Ord a => a -> RBT a -> RBT a
+ins a LeafRB = NodeRB Red LeafRB a LeafRB
+ins a t@(NodeRB color t1 x t2)
+  | a < x = balance color (ins a t1) x t2
+  | a > x = balance color t1 x (ins a t2)
+  | otherwise = t
 
+-- Function to balance the tree based on pattern matching
+balance :: Color -> RBT a -> a -> RBT a -> RBT a
+balance Black (NodeRB Red (NodeRB Red t1 x1 t2) x2 t3) x3 t4 = -- Left-Left case
+  NodeRB Red (NodeRB Black t1 x1 t2) x2 (NodeRB Black t3 x3 t4)
+balance Black t1 x1 (NodeRB Red t2 x2 (NodeRB Red t3 x3 t4)) = -- Right-Right case
+  NodeRB Red (NodeRB Black t1 x1 t2) x2 (NodeRB Black t3 x3 t4) 
+balance Black (NodeRB Red t1 x1 (NodeRB Red t2 x2 t3)) x3 t4 = -- Left-Right case
+  NodeRB Red (NodeRB Black t1 x1 t2) x2 (NodeRB Black t3 x3 t4)
+balance Black t1 x1 (NodeRB Red (NodeRB Red t2 x2 t3) x3 t4) = -- Right-Left case 
+  NodeRB Red (NodeRB Black t1 x1 t2) x2 (NodeRB Black t3 x3 t4)
+balance color t1 x t2 =  NodeRB color t1 x t2 -- For all other patterns
 
 -- -- Delete an element from a RBT, preserving the RBT properties
 
