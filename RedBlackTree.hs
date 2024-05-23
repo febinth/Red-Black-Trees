@@ -34,9 +34,17 @@ maxRB (NodeRB _ _ a LeafRB) = Just a -- If right sub tree is a leaf return the r
 maxRB (NodeRB _ _ _ rightRBT) = maxRB rightRBT -- Recursively check right sub tree for maximum value
   
 
--- -- Check if a tree satisfies the Binary Search Tree condition
--- --   (do not check other RBT conditions)
--- isBST :: Ord a => RBT a -> Bool
+-- Check if a tree satisfies the Binary Search Tree condition
+--   (do not check other RBT conditions)
+isBST :: Ord a => RBT a -> Bool
+isBST LeafRB = True
+isBST (NodeRB _ leftRBT a rightRBT) =
+  let leftMax = maxRB leftRBT
+      rightMin = minRB rightRBT
+      -- leftMax and rightMin might return Nothing since we will compare leaf nodes
+      leftTreeCheck = maybe True (a >) leftMax -- If leftMax is Nothing, return True else evaluate a > leftMax
+      rightTreeCheck = maybe True (a <) rightMin -- If rightMin is Nothing, return True else evaluate a < rightMin
+  in leftTreeCheck && rightTreeCheck && isBST leftRBT && isBST rightRBT
 
 
 -- -- Check the Black-balancing condition:
