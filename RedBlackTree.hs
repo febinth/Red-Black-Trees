@@ -123,8 +123,70 @@ balance Black t1 x1 (NodeRB Red (NodeRB Red t2 x2 t3) x3 t4) = -- Right-Left cas
   NodeRB Red (NodeRB Black t1 x1 t2) x2 (NodeRB Black t3 x3 t4)
 balance color t1 x t2 =  NodeRB color t1 x t2 -- For all other patterns
 
--- -- Delete an element from a RBT, preserving the RBT properties
+-- Delete an element from a RBT, preserving the RBT properties
+deleteRB :: Ord a => a -> RBT a -> RBT a
+deleteRB x t = blackRoot (del x t)
 
--- deleteRB :: Ord a => a -> RBT a -> RBT a
+-- Function to rebalance the RBT when hte left child has height smaller than 1
+balL :: RBT a -> a -> RBT a -> RBT a
+balL (NodeRB Red t1 x t2) y t3 = NodeRB Red (NodeRB Black t1 x t2) y t3
+balL t1 y (NodeRB Black t2 z t3) = balance Black t1 y (NodeRB Red t2 z t3)
+balL t1 y (NodeRB Red (NodeRB Black t2 u t3) z t4) = 
+  NodeRB Red (NodeRB Black t1 y t2) u (balance Black t3 z (redRoot t4))
 
+-- Function to rebalance the RBT when the right child has height smaller than 1
+balR :: RBT a -> a -> RBT a -> RBT a
+balR t1 y (NodeRB Red t2 x t3) = NodeRB Red t1 y (NodeRB Black t2 x t3)
+balR (NodeRB Black t1 z t2) y t3 = balance Black (NodeRB Red t1 z t2) y t3
+balR (NodeRB Red t1 z (NodeRB Black t2 u t3)) y t4 = 
+  NodeRB Red (balance Black (redRoot t1) z t2) u (NodeRB Black t3 y t4)
 
+-- Function to paint the root node red
+redRoot :: RBT a -> RBT a
+redRoot LeafRB = LeafRB
+redRoot (NodeRB _ leftRBT value rightRBT) = NodeRB Red leftRBT value rightRBT
+
+-- A function that retrieves the color of the tree
+color :: RBT a -> Color
+color LeafRB = Black -- Leaves are considered black
+color (NodeRB c _ _ _) = c
+
+-- Function to delete a key from the left subtree
+delL :: Ord a => a -> RBT a -> a -> RBT a -> RBT a
+delL x t1 y t2 =
+  if color t1 == Black
+  then balL (del x t1) y t2
+  else NodeRB Red (del x t1) y t2
+
+-- Function to delete a key from the right subtree
+delR :: Ord a => a -> RBT a  -> a -> RBT a  -> RBT a 
+delR x t1 y t2 =
+  if color t2 == Black
+  then balR t1 y (del x t2)
+  else NodeRB Red t1 y (del x t2)
+
+del :: Ord a => a -> RBT a -> RBT a
+del x LeafRB = LeafRB
+del x (NodeRB _ t1 y t2)
+  | x < y = delL x t1 y t2 -- delete from left child
+  | x > y = delR x t1 y t2 -- delete from right child
+  | otherwise = fuse t1 t2 -- delete root, fuse children
+
+-- Function to fuse two RBTs together
+fuse :: RBT a -> RBT a -> RBT a
+fuse LeafRB t2 = t2
+fuse t1 LeafRB = t1
+fuse t1@(NodeRB Black _ _ _) (NodeRB Red t3 y t4) = NodeRB Red (fuse t1 t3) y t4 -- Fuse balck and red tree
+fuse (NodeRB Red t1 x t2) t3@(NodeRB Black _ _ _) = NodeRB Red t1 x (fuse t2 t3) -- Fuse red and black tree
+fuse (NodeRB Red t1 x t2) (NodeRB Red t3 y t4)  = -- Fuse two red trees together
+  let s = fuse t2 t3 -- Recursively fuse t2 and t3
+  in case s of
+       (NodeRB Red s1 z s2) -> (NodeRB Red (NodeRB Red t1 x s1) z (NodeRB Red s2 y t4))
+       (NodeRB Black _ _ _) -> (NodeRB Red t1 x (NodeRB Red s y t4))
+       LeafRB -> NodeRB Red t1 x (NodeRB Red LeafRB y t4) -- Treat leaf case similar to black node after fusing t2 and t3
+fuse (NodeRB Black t1 x t2) (NodeRB Black t3 y t4)  = -- Fuse two black trees together
+  let s = fuse t2 t3 -- Recursively fuse t2 and t3
+  in case s of
+       (NodeRB Red s1 z s2) -> (NodeRB Red (NodeRB Black t1 x s1) z (NodeRB Black s2 y t4))
+       (NodeRB Black _ _ _) -> balL t1 x (NodeRB Black s y t4)
+       LeafRB -> balL t1 x (NodeRB Black LeafRB y t4) -- Treat leaf case similar to black node after fusing t2 and t3
